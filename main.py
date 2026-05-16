@@ -203,8 +203,15 @@ def skills_by_category():
 def city_demand(limit: int = 15):
     conn = get_conn()
     rows = conn.execute("""
-        SELECT city, job_count, avg_salary, pct_of_jobs
-        FROM v_city_demand LIMIT ?
+        SELECT city,
+               COUNT(*) as job_count,
+               ROUND(AVG((salary_min+salary_max)/2), 1) as avg_salary,
+               ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM jobs), 1) as pct_of_jobs
+        FROM jobs
+        WHERE city IS NOT NULL AND city != ''
+        GROUP BY city
+        ORDER BY job_count DESC
+        LIMIT ?
     """, (limit,)).fetchall()
     conn.close()
     return [{"city": r[0], "jobs": r[1], "avg_salary": r[2], "pct": r[3]} for r in rows]
@@ -229,11 +236,34 @@ def city_top_skills(city: str, limit: int = 10):
 def company_hiring(limit: int = 20):
     conn = get_conn()
     rows = conn.execute("""
-        SELECT company, open_roles, avg_salary, latest_posting
-        FROM v_company_hiring LIMIT ?
+        SELECT company,
+               COUNT(*) as open_roles,
+               ROUND(AVG((salary_min+salary_max)/2), 1) as avg_salary,
+               MAX(posted_date) as latest_posting
+        FROM jobs
+        WHERE company IS NOT NULL AND company != ''
+        GROUP BY company
+        ORDER BY open_roles DESC
+        LIMIT ?
     """, (limit,)).fetchall()
     conn.close()
     return [{"company": r[0], "open_roles": r[1], "avg_salary": r[2], "latest": r[3]} for r in rows]
+
+
+@app.get("/api/skills/combinations")
+def skill_combinations(limit: int = 25):
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT a.skill as skill1, b.skill as skill2, COUNT(*) as co_occurrences
+        FROM job_skills a
+        JOIN job_skills b ON a.job_id = b.job_id AND a.skill < b.skill
+        GROUP BY a.skill, b.skill
+        HAVING co_occurrences >= 3
+        ORDER BY co_occurrences DESC
+        LIMIT ?
+    """, (limit,)).fetchall()
+    conn.close()
+    return [{"skill1": r[0], "skill2": r[1], "co_occurrences": r[2]} for r in rows]
 
 
 # ── Salary analytics ──────────────────────────────────────────────────────────
