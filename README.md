@@ -1,6 +1,6 @@
-# ⚙️ JobMarket AI — Backend (FastAPI + SQLite)
+# ⚙️ JobMarket AI — Backend (FastAPI)
 
-> **FastAPI backend** powering the JobMarket AI platform — NLP skill extraction, percentile salary engine, and Groq LLM chatbot over 1,000 India IT job postings.
+> **FastAPI backend** powering the JobMarket AI platform — synthetic job data engine, NLP skill extraction, percentile salary analytics, and a Groq LLM chatbot over 1,000 India IT job postings.
 
 👉 **[Live App](https://jobmarket-frontend.vercel.app/)** &nbsp;|&nbsp; 🖥️ **[Frontend Repo](https://github.com/aftabdayer/jobmarket-frontend)**
 
@@ -8,47 +8,56 @@
 
 ## What This Repo Contains
 
-This is the API and data layer for JobMarket AI. It handles:
-
-- Job data ingestion and storage (SQLite)
-- NLP pipeline for skill extraction from job descriptions
-- Percentile salary calculations (P25/P50/P75/P90)
-- REST API endpoints consumed by the Next.js frontend
-- Groq + LLaMA3 chatbot with live database context
+This is the data and API layer for JobMarket AI. It handles job data generation, NLP skill extraction, all analytics calculations, and the AI chatbot — serving a Next.js frontend via REST API.
 
 ---
 
 ## API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /jobs` | Browse and filter job postings |
-| `GET /skills` | Skill demand by role |
-| `GET /salaries` | Salary percentiles by role and city |
-| `GET /cities` | Hiring activity by city |
-| `GET /companies` | Company-level stats |
-| `GET /trends` | Weekly posting volume over time |
-| `POST /chat` | LLM chatbot — natural language Q&A over job data |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check — job count, skill count, posts this week |
+| `GET` | `/api/summary` | Market KPIs — total jobs, companies, cities, avg salary, weekly posts |
+| `GET` | `/api/skills/top` | Top skills by demand; filterable by role title |
+| `GET` | `/api/skills/salary` | Skills ranked by average salary; filterable by role |
+| `GET` | `/api/skills/categories` | Skills grouped by category (languages, frameworks, tools, etc.) |
+| `GET` | `/api/job-titles` | All job titles in the database |
+| `GET` | `/api/cities` | Hiring demand and avg salary by city |
+| `GET` | `/api/jobs` | Job search — filter by keyword, city, company, skill, experience |
+| `POST` | `/api/chat` | LLM chatbot — answers career questions grounded in live DB data |
+| `POST` | `/api/scrape` | Trigger background job data refresh |
+| `POST` | `/api/reseed` | Wipe and reseed database with fresh synthetic jobs |
 
 ---
 
 ## Data Pipeline
 
 ```
-Raw job postings (1,000)
+Synthetic job generator (1,000 jobs across 15 IT roles)
         ↓
-NLP Extraction (skill keywords + regex)
+NLP skill extraction — 125 unique skills, 9,833 skill–role associations
         ↓
-SQLite DB — jobs, skills, salary, city tables
+SQLite DB — jobs, job_skills, chat_sessions tables
         ↓
-Aggregation layer — percentiles, trends, counts
+Analytics layer — percentiles, city heatmaps, salary bands, trends
         ↓
-FastAPI REST endpoints
+FastAPI REST endpoints → Next.js frontend
         ↓
-Next.js frontend → Groq chatbot
+Groq + LLaMA3 chatbot (grounded in live DB context)
 ```
 
-**Output:** 125 unique skills · 9,833 skill–role associations · P25/P50/P75/P90 salary bands across 24 cities
+---
+
+## Key Stats
+
+| Metric | Value |
+|--------|-------|
+| Jobs in database | 1,000 |
+| IT roles covered | 15 |
+| Unique skills | 125 |
+| Skill–role associations | 9,833 |
+| Cities tracked | 24 |
+| Auto-refresh | Every 24 hours |
 
 ---
 
@@ -58,8 +67,9 @@ Next.js frontend → Groq chatbot
 |-------|-----------|
 | API Framework | FastAPI · Python |
 | Database | SQLite |
-| NLP | Custom extraction pipeline (regex + keyword matching) |
-| LLM | Groq API · LLaMA3 |
+| Data Generation | Custom synthetic engine |
+| NLP | Keyword + regex skill extraction |
+| LLM | Groq API · LLaMA-3.3-70b |
 | Deployment | Render |
 
 ---
@@ -74,15 +84,17 @@ cd jobmarket-backend
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Set your Groq API key
+# 3. Set Groq API key
 export GROQ_API_KEY=your_key_here
 
 # 4. Start the server
 uvicorn main:app --reload
 ```
 
-API will be available at `http://localhost:8000`  
-Docs at `http://localhost:8000/docs`
+API available at `http://localhost:8000`  
+Interactive docs at `http://localhost:8000/docs`
+
+Database is auto-seeded with 1,000 jobs on first run. Auto-refreshes every 24 hours.
 
 ---
 
